@@ -508,3 +508,109 @@ function remove_admin_bar() {
 }
 add_action('get_header', 'remove_admin_bar');
 ```
+
+
+### remove prices from woocommerce products
+add_filter( 'woocommerce_get_price_html', 'remove_price');
+function remove_price($price){     
+     return ;
+}
+
+### turn off products being purchasable 
+Ref: https://wisdmlabs.com/blog/the-right-way-to-hide-add-to-cart-button-in-woocommerce/
+ add_filter( 'woocommerce_is_purchasable', '__return_false');
+ 
+ 
+ 
+  // Change WooCommerce "Related products" text
+add_filter('gettext', 'change_rp_text', 10, 3);
+add_filter('ngettext', 'change_rp_text', 10, 3);
+
+function change_rp_text($translated, $text, $domain)
+{
+     if ($text === 'Related products' && $domain === 'woocommerce') {
+         $translated = esc_html__('You might also like', $domain);
+     }
+     return $translated;
+}
+
+  // Change WooCommerce 'read more' text to 'out of stock'
+add_filter( 'woocommerce_product_add_to_cart_text', function( $text ) {
+    if ( 'Read more' == $text ) {
+        $text = __( 'Out of stock', 'woocommerce' );
+    }
+    return $text;
+} );
+
+// Change out of stock message on individual products
+add_filter( 'woocommerce_get_availability', 'change_out_of_stock_text_woocommerce', 1, 2);
+ 
+function change_out_of_stock_text_woocommerce( $availability, $product_to_check ) {
+    if ( ! $product_to_check->is_in_stock() ) {
+        $availability['availability'] = __('Due to overwhelming demand we are currently out of stock on this product. We apologise for the inconvenience.', 'woocommerce');
+    }
+    return $availability;
+}
+
+// Update Street Address Shipping Label
+add_filter( 'woocommerce_default_address_fields' , 'custom_override_default_address_fields' );
+
+// Our hooked in function - $address_fields is passed via the filter
+function custom_override_default_address_fields( $address_fields ) {
+     $address_fields['address_1']['label'] = 'Street address. Please note we are unable to deliver to PO Boxes.';
+
+     return $address_fields;
+}
+
+
+// Add PO Box shipping notice to "ship to different address checkbox"
+add_filter('gettext', 'custom_strings_translation', 20, 3);
+
+function custom_strings_translation( $translated_text, $text, $domain ) {
+
+  switch ( $translated_text ) {
+    case 'Ship to a different address?' : 
+      $translated_text =  __( 'Ship to a different address? Please note we are unable
+to deliver to PO Boxes.', 'woocommerce' ); 
+      break;
+  }
+
+  return $translated_text;
+}
+
+  
+add_filter('woocommerce_single_product_carousel_options', 'ud_update_woo_flexslider_options');
+function ud_update_woo_flexslider_options($options) {
+      // show arrows
+      $options['directionNav'] = true;
+      $options['animation'] = "slide";
+
+      // control par texte (boolean) ou bien par vignettes
+      // $options['controlNav'] = true;
+      //$options['controlNav'] = "thumbnails";
+
+      // $options['mousewheel'] = true;
+
+      return $options;
+  }
+
+
+
+/**
+ * Hide shipping rates when free shipping is available.
+ * Updated to support WooCommerce 2.6 Shipping Zones.
+ *
+ * @param array $rates Array of rates found for the package.
+ * @return array
+ */
+function my_hide_shipping_when_free_is_available( $rates ) {
+	$free = array();
+	foreach ( $rates as $rate_id => $rate ) {
+		if ( 'free_shipping' === $rate->method_id ) {
+			$free[ $rate_id ] = $rate;
+			break;
+		}
+	}
+	return ! empty( $free ) ? $free : $rates;
+}
+add_filter( 'woocommerce_package_rates', 'my_hide_shipping_when_free_is_available', 100 );
